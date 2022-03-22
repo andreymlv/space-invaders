@@ -100,8 +100,8 @@
 ;; interp. the list of pixels that corresponds to the shield in the game
 
 (define LOP-1 empty)
-(define LOP-2 (cons (make-pixel 1 1) empty))
-(define LOP-3 (cons (make-pixel 1 1) (cons (make-pixel 1 2) empty)))
+(define LOP-2 (list (make-pixel 1 1)))
+(define LOP-3 (list (make-pixel 1 1) (make-pixel 1 2)))
 
 #;
 (define (fn-for-lop lop)
@@ -146,9 +146,8 @@
 ;; interp. a list of enemies
 
 (define LOE-1 empty)
-(define LOE-2 (cons (make-enemy 10 20 2 "right") empty))
-(define LOE-3 (cons (make-enemy 10 20 2 "right")
-                    (cons (make-enemy 20 20 2 "right") empty)))
+(define LOE-2 (list (make-enemy 10 20 2 "right")))
+(define LOE-3 (list (make-enemy 10 20 2 "right") (make-enemy 20 20 2 "right")))
 
 #;
 (define (fn-for-loe loe)
@@ -164,23 +163,6 @@
 ;;  - compound: (cons Enemy ListOfEnemy)
 ;;  - self-reference: (rest loe) is ListOfEnemy
 
-(define-struct game (level enemies shields stat))
-;; Game is (make-game Number ListOfEnemy ListOfShields Statistics)
-;; interp. a game with level, enemies, shields and stats
-
-(define GAME-1 (make-game 6 10
-                          (cons LOP-2 (cons LOP-3 empty))
-                          (make-stat 6 "running")))
-
-#;
-(define (fn-for-game g)
-  (... (game-level g)                 ;Number
-       (fn-for-loe (game-enemies g))  ;ListOfEnemy
-       (fn-for-los (game-shields g))  ;ListOfShields
-       (fn-for-stat (game-stat g))))  ;Statistics
-;; Template rules used:
-;;  - compound: 4 fields
-
 (define-struct hero (x y lives))
 ;; Hero is (make-hero Number Number Number)
 ;; interp. a hero at position x, y with lives count
@@ -191,7 +173,7 @@
 (define (fn-for-hero h)
   (... (hero-x h)       ;Number
        (hero-y h))      ;Number
-       (hero-lives h))  ;Number
+  (hero-lives h))  ;Number
 ;; Template rules used:
 ;;  - compound: 3 fields
 
@@ -210,8 +192,8 @@
 ;;  - atomic distinct: "down"
 
 (define-struct projectile (x y direction))
-;; Ball is (make-ball Number Number ProjectileDirection)
-;; interp. a ball at position x, y  with some direction
+;; Projectile is (make-projectile Number Number ProjectileDirection)
+;; interp. a projectile at position x, y  with some direction
 
 (define PROJECTILE-1 (make-projectile 6 10 "up"))
 
@@ -219,30 +201,73 @@
 (define (fn-for-projectile p)
   (... (projectile-x p)                                         ;Number
        (projectile-y p))                                        ;Number
-       (fn-for-projectile-direction (projectile-direction p)))  ;ProjectileDirection
+  (fn-for-projectile-direction (projectile-direction p)))  ;ProjectileDirection
 ;; Template rules used:
 ;;  - compound: 3 fields
 
-;; WS is ... (give WS a better name)
+;; ListOfProjectile is one of:
+;;  - empty
+;;  - (cons Projectile ListOfProjectile)
+;; interp. a list of Dot
+(define LOP1 empty)
+(define LOP2 (list (make-projectile 6 10 "up") (make-projectile 20 10 "down")))
+#;
+(define (fn-for-lop lop)
+  (cond [(empty? lop) (...)]
+        [else
+         (... (fn-for-projectile (first lop))
+              (fn-for-lop (rest lop)))]))
+
+;; Template rules used:
+;;  - one of: 2 cases
+;;  - atomic distinct: empty
+;;  - compound: (cons Projectile ListOfProjectile)
+;;  - reference: (first lop) is Projectile
+;;  - self-reference: (rest lop) is ListOfProjectile
+
+(define-struct game (level hero enemies shields projectiles stat))
+;; Game is (make-game Number ListOfEnemy ListOfShields Statistics)
+;; interp. a game with level, enemies, shields and stats
+
+(define GAME-1 (make-game 1
+                          (make-hero 6 10 3)
+                          (list (make-enemy 10 20 2 "right")
+                                (make-enemy 20 20 2 "right"))
+                          (list (make-pixel 1 1)
+                                (make-pixel 1 2))
+                          (list (make-projectile 6 10 "up")
+                                (make-projectile 20 10 "down"))
+                          (make-stat 6 "running")))
+
+#;
+(define (fn-for-game g)
+  (... (game-level g)                       ;Number
+       (fn-for-hero (game-enemies g))       ;Hero
+       (fn-for-loe (game-enemies g))        ;ListOfEnemy
+       (fn-for-los (game-shields g))        ;ListOfShields
+       (fn-for-projectile (game-enemies g)) ;ListOfProjectile
+       (fn-for-stat (game-stat g))))        ;Statistics
+;; Template rules used:
+;;  - compound: 6 fields
 
 ;; =================
 ;; Functions:
 
-;; WS -> WS
+;; Game -> Game
 ;; start the world with (main ...)
 ;;
-(define (main ws)
-  (big-bang ws ; WS
-    (on-tick tock) ; WS -> WS
-    (to-draw render) ; WS -> Image
-    (on-key (void)))) ; WS KeyEvent -> WS
+(define (main g)
+  (big-bang g         ; Game
+    (on-tick tock)    ; Game -> Game
+    (to-draw render)  ; Game -> Image
+    (on-key (void)))) ; Game KeyEvent -> Game
 
-;; WS -> WS
+;; Game -> Game
 ;; produce the next ...
 ;; !!!
 (define (tock ws) ws)
 
-;; WS -> Image
+;; Game -> Image
 ;; render ...
 ;; !!!
 (define (render ws) empty-image)
