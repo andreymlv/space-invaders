@@ -212,11 +212,11 @@
 (define LOP1 empty)
 (define LOP2 (list (make-projectile 6 10 "up") (make-projectile 20 10 "down")))
 #;
-(define (fn-for-lop lop)
+(define (fn-for-loproj lop)
   (cond [(empty? lop) (...)]
         [else
          (... (fn-for-projectile (first lop))
-              (fn-for-lop (rest lop)))]))
+              (fn-for-loproj (rest lop)))]))
 
 ;; Template rules used:
 ;;  - one of: 2 cases
@@ -242,10 +242,10 @@
 #;
 (define (fn-for-game g)
   (... (game-level g)                       ;Number
-       (fn-for-hero (game-enemies g))       ;Hero
+       (fn-for-hero (game-hero g))          ;Hero
        (fn-for-loe (game-enemies g))        ;ListOfEnemy
        (fn-for-los (game-shields g))        ;ListOfShields
-       (fn-for-projectile (game-enemies g)) ;ListOfProjectile
+       (fn-for-loproj (game-projectiles g)) ;ListOfProjectile
        (fn-for-stat (game-stat g))))        ;Statistics
 ;; Template rules used:
 ;;  - compound: 6 fields
