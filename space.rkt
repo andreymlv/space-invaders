@@ -281,8 +281,45 @@
 ;; !!!
 (define (render g) empty-image)
 
-;; Number Number -> Image
-;; Generate shield of pixels 16x16 where x and y corresponds to right-up corner
-(check-expect (generate-shield 0 0) empty-image)
+;; Number Number Number -> ListOfPixel
+;; Generate line of pixels where x and y with some length
+(check-expect (generate-line 0 0 0) empty)
+(check-expect (generate-line 0 0 4) (list (make-pixel 0 0) (make-pixel 1 0) (make-pixel 2 0) (make-pixel 3 0)))
 
-(define (generate-shield x y) empty-image) ; stub
+;(define (generate-line x y length) empty) ; stub
+
+(define (generate-line x y lenght)
+  (cond [(= lenght 0) empty]
+        [else (cons (make-pixel x y)
+                    (generate-line (+ x 1) y (- lenght 1)))]))
+
+;; Pixel Image -> Image
+;; Render pixel to image on background
+(check-expect (draw-pixel (make-pixel 0 0) BACKGROUND) (place-image PIXEL-IMAGE 0 0 BACKGROUND))
+(check-expect (draw-pixel (make-pixel 10 10) BACKGROUND) (place-image PIXEL-IMAGE 10 10 BACKGROUND))
+
+;(define (draw-pixel p scene) scene) ; stub
+
+(define (draw-pixel p scene)
+  (place-image PIXEL-IMAGE
+               (pixel-x p) (pixel-y p)
+               scene))
+
+;; ListOfPixel Image -> Image
+;; Render list of pixels to image on background
+(check-expect (draw-pixels empty BACKGROUND) BACKGROUND)
+(check-expect (draw-pixels (generate-line 10 10 4) BACKGROUND) (overlay
+                                                                (draw-pixel (make-pixel 10 10)
+                                                                            (draw-pixel (make-pixel 11 10)
+                                                                                        (draw-pixel (make-pixel 12 10)
+                                                                                                    (draw-pixel (make-pixel 13 10)
+                                                                                                                BACKGROUND))))
+                                                                BACKGROUND))
+
+;(define (draw-pixels lop scene) BACKGROUND) ; stub
+
+(define (draw-pixels lop scene)
+  (cond [(empty? lop) scene]                     ; BASE CASE
+        [else (overlay (draw-pixel (first lop)   ; Pixel
+                                   (draw-pixels (rest lop) scene)) ; NATURAL RECURSION 
+                       scene)]))
