@@ -1,5 +1,6 @@
-#lang racket
-
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname space) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
 (require 2htdp/image)
 (require 2htdp/universe)
 
@@ -123,8 +124,9 @@
 ;; interp. the list of shields
 
 (define LOS-1 empty)
-(define LOS-2 (cons LOP-2 empty))
-(define LOS-3 (cons LOP-2 (cons LOP-3 empty)))
+(define LOS-2 (list LOP-2))
+(define LOS-3 (list LOP-2 LOP-3))
+(define SHIELDS-INIT empty)
 
 #;
 (define (fn-for-los los)
@@ -152,7 +154,7 @@
 #;
 (define (fn-for-loe loe)
   (cond [(empty? loe) (...)]                   ;BASE CASE
-        [else (... (fn-for-enemy (first loe))                 ;Enemy
+        [else (... (fn-for-enemy (first loe))  ;Enemy
                    (fn-for-loe (rest loe)))])) ;NATURAL RECURSION
 ;;             /
 ;;            /
@@ -239,6 +241,13 @@
                                 (make-projectile 20 10 "down"))
                           (make-stat 6 "running")))
 
+(define GAME-INIT (make-game 1
+                             (make-hero 0 0 3)
+                             empty
+                             SHIELDS-INIT
+                             empty
+                             (make-stat 0 "running")))
+
 #;
 (define (fn-for-game g)
   (... (game-level g)                       ;Number
@@ -260,14 +269,20 @@
   (big-bang g         ; Game
     (on-tick tock)    ; Game -> Game
     (to-draw render)  ; Game -> Image
-    (on-key (void)))) ; Game KeyEvent -> Game
+    (on-key ...))) ; Game KeyEvent -> Game
 
 ;; Game -> Game
-;; produce the next ...
+;; produce the next state of the game
 ;; !!!
-(define (tock ws) ws)
+(define (tock g) g)
 
 ;; Game -> Image
-;; render ...
+;; render current state of game
 ;; !!!
-(define (render ws) empty-image)
+(define (render g) empty-image)
+
+;; Number Number -> Image
+;; Generate shield of pixels 16x16 where x and y corresponds to right-up corner
+(check-expect (generate-shield 0 0) empty-image)
+
+(define (generate-shield x y) empty-image) ; stub
