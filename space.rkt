@@ -11,15 +11,14 @@
 ;; =================
 
 (define ENEMY-IMAGE (bitmap "images/enemy.png"))
-(define HERO-IMAGE (bitmap "images/enemy.png"))
+(define HERO-IMAGE (bitmap "images/hero.png"))
 (define PIXEL-IMAGE (square 1 "solid" "green"))
 (define ENEMY-PROJECTILE-IMAGE (bitmap "images/enemy-projectile.png"))
 (define HERO-PROJECTILE-IMAGE (bitmap "images/hero-projectile.png"))
 (define ENEMIES-COUNT-ROW 11)
-(define ENEMIES-COUNT-COLUMN 5)
 (define HERO-SPEED 4)
 (define PROJECTILE-SPEED 2)
-(define SHIELD-SIZE 64)
+(define SHIELD-SIZE (* (image-width ENEMY-IMAGE) 2))
 (define WIDTH (* SHIELD-SIZE 9))
 (define HEIGHT (* WIDTH (/ 4 3))) ; trying to be with retro ratio size
 (define BACKGROUND (rectangle WIDTH HEIGHT "solid" "black"))
@@ -194,7 +193,7 @@
 ;;  - atomic distinct: "up"
 ;;  - atomic distinct: "down"
 
-(define-struct projectile (positon direction))
+(define-struct projectile (position direction))
 ;; Projectile is (make-projectile posn ProjectileDirection)
 ;; interp. a projectile at position x, y  with some direction
 
@@ -278,7 +277,11 @@
 ;; Number Number Number -> ListOfPixel
 ;; Generate line of pixels where x and y with some length
 (check-expect (generate-line (make-posn 0 0) 0) empty)
-(check-expect (generate-line (make-posn 0 0) 4) (list (make-pixel (make-posn 0 0)) (make-pixel (make-posn 1 0)) (make-pixel (make-posn 2 0)) (make-pixel (make-posn 3 0))))
+(check-expect (generate-line (make-posn 0 0) 4) (list
+                                                 (make-pixel (make-posn 0 0))
+                                                 (make-pixel (make-posn 1 0))
+                                                 (make-pixel (make-posn 2 0))
+                                                 (make-pixel (make-posn 3 0))))
 
 ;(define (generate-line x y length) empty) ; stub
 
@@ -302,8 +305,13 @@
 ;; ListOfPixel Image -> Image
 ;; Render list of pixels to image on background
 (check-expect (draw-pixels empty empty-image) empty-image)
-(check-expect (draw-pixels (generate-line (make-posn 10 10) 1) BACKGROUND) (draw-pixel (make-pixel (make-posn 10 10)) BACKGROUND))
-(check-expect (draw-pixels (generate-line (make-posn 10 10) 4) BACKGROUND) (draw-pixel (make-pixel (make-posn 10 10)) (draw-pixel (make-pixel (make-posn 11 10)) (draw-pixel (make-pixel (make-posn 12 10)) (draw-pixel (make-pixel (make-posn 13 10)) BACKGROUND)))))
+(check-expect (draw-pixels (generate-line (make-posn 10 10) 1) BACKGROUND)
+              (draw-pixel (make-pixel (make-posn 10 10)) BACKGROUND))
+(check-expect (draw-pixels (generate-line (make-posn 10 10) 4) BACKGROUND)
+              (draw-pixel (make-pixel (make-posn 10 10))
+                          (draw-pixel (make-pixel (make-posn 11 10))
+                                      (draw-pixel (make-pixel (make-posn 12 10))
+                                                  (draw-pixel (make-pixel (make-posn 13 10)) BACKGROUND)))))
 
 ;(define (draw-pixels lop scene) BACKGROUND) ; stub
 
@@ -460,16 +468,125 @@
 (define (generate-shield position)
   (generate-lines position (+ SHIELD-SIZE 1)))
 
-(define SHIELDS-INIT (append (generate-shield (make-posn (* SHIELD-SIZE 1) (- HEIGHT (* SHIELD-SIZE 2))))
-                             (generate-shield (make-posn (* SHIELD-SIZE 3) (- HEIGHT (* SHIELD-SIZE 2))))
-                             (generate-shield (make-posn (* SHIELD-SIZE 5) (- HEIGHT (* SHIELD-SIZE 2))))
-                             (generate-shield (make-posn (* SHIELD-SIZE 7) (- HEIGHT (* SHIELD-SIZE 2))))))
+;; posn Number Number -> ListOfEnemies
+;; Generate List of enemies from some pos with indent between
+(check-expect (generate-line-of-enemies (make-posn (image-width ENEMY-IMAGE)
+                                                   (image-height ENEMY-IMAGE))
+                                        0
+                                        ENEMIES-COUNT-ROW)
+              (list
+               (make-enemy (make-posn 32 32) 2 "right")
+               (make-enemy (make-posn 32 32) 2 "right")
+               (make-enemy (make-posn 32 32) 2 "right")
+               (make-enemy (make-posn 32 32) 2 "right")
+               (make-enemy (make-posn 32 32) 2 "right")
+               (make-enemy (make-posn 32 32) 2 "right")
+               (make-enemy (make-posn 32 32) 2 "right")
+               (make-enemy (make-posn 32 32) 2 "right")
+               (make-enemy (make-posn 32 32) 2 "right")
+               (make-enemy (make-posn 32 32) 2 "right")
+               (make-enemy (make-posn 32 32) 2 "right")))
+(check-expect (generate-line-of-enemies (make-posn (image-width ENEMY-IMAGE)
+                                                   (image-height ENEMY-IMAGE))
+                                        4
+                                        ENEMIES-COUNT-ROW)
+              (list
+               (make-enemy (make-posn 32 32) 2 "right")
+               (make-enemy (make-posn 36 32) 2 "right")
+               (make-enemy (make-posn 40 32) 2 "right")
+               (make-enemy (make-posn 44 32) 2 "right")
+               (make-enemy (make-posn 48 32) 2 "right")
+               (make-enemy (make-posn 52 32) 2 "right")
+               (make-enemy (make-posn 56 32) 2 "right")
+               (make-enemy (make-posn 60 32) 2 "right")
+               (make-enemy (make-posn 64 32) 2 "right")
+               (make-enemy (make-posn 68 32) 2 "right")
+               (make-enemy (make-posn 72 32) 2 "right")))
 
-(define ENEMIES-INIT empty)
+(define (generate-line-of-enemies position indent times)
+  (cond [(< times 1) empty]
+        [else (cons (make-enemy position 2 "right")
+                    (generate-line-of-enemies (make-posn (+ (posn-x position) indent)
+                                                         (posn-y position))
+                                              indent
+                                              (- times 1)))]))
+
+;; Enemy Image -> Image
+;; prod. image of enemy of spec. image
+(define (draw-enemy e scene)
+  (place-image ENEMY-IMAGE
+               (posn-x (enemy-position e)) (posn-y (enemy-position e))
+               scene))
+
+;; ListOfEnemy Image -> Image
+;; prod. image of enemies on spec. scene
+(define (draw-enemies loe scene)
+  (cond [(empty? loe) scene]
+        [else (draw-enemy (first loe) (draw-enemies (rest loe) scene))]))
+
+(define SHIELDS-INIT (append
+                      (generate-shield (make-posn (* SHIELD-SIZE 1) (- HEIGHT (* SHIELD-SIZE 2))))
+                      (generate-shield (make-posn (* SHIELD-SIZE 3) (- HEIGHT (* SHIELD-SIZE 2))))
+                      (generate-shield (make-posn (* SHIELD-SIZE 5) (- HEIGHT (* SHIELD-SIZE 2))))
+                      (generate-shield (make-posn (* SHIELD-SIZE 7) (- HEIGHT (* SHIELD-SIZE 2))))))
+
+(define ENEMIES-INIT (append
+                      (generate-line-of-enemies (make-posn (image-width ENEMY-IMAGE)
+                                                           (image-height ENEMY-IMAGE))
+                                                (* (image-width ENEMY-IMAGE) 1.5)
+                                                ENEMIES-COUNT-ROW)
+                      (generate-line-of-enemies (make-posn (image-width ENEMY-IMAGE)
+                                                           (* (image-height ENEMY-IMAGE) 3))
+                                                (*(image-width ENEMY-IMAGE) 1.5)
+                                                ENEMIES-COUNT-ROW)
+                      (generate-line-of-enemies (make-posn (image-width ENEMY-IMAGE)
+                                                           (* (image-height ENEMY-IMAGE) 5))
+                                                (*(image-width ENEMY-IMAGE) 1.5)
+                                                ENEMIES-COUNT-ROW)
+                      (generate-line-of-enemies (make-posn (image-width ENEMY-IMAGE)
+                                                           (* (image-height ENEMY-IMAGE) 7))
+                                                (*(image-width ENEMY-IMAGE) 1.5)
+                                                ENEMIES-COUNT-ROW)
+                      (generate-line-of-enemies (make-posn (image-width ENEMY-IMAGE)
+                                                           (* (image-height ENEMY-IMAGE) 9))
+                                                (*(image-width ENEMY-IMAGE) 1.5)
+                                                ENEMIES-COUNT-ROW)))
+
+;; Hero Image -> Image
+;; prod. render hero on spec. scene
+(define (draw-hero h scene)
+  (place-image HERO-IMAGE
+               (posn-x (hero-position h)) (posn-y (hero-position h))
+               scene))
+
+;; Projectile Image -> Image
+;; prod. render projectile on spec. scene
+(define (draw-projectile p scene)
+  (place-image (cond [(string=? (projectile-direction p) "up") HERO-PROJECTILE-IMAGE]
+                     [(string=? (projectile-direction p) "down") ENEMY-PROJECTILE-IMAGE])
+               (posn-x (projectile-position p)) (posn-y (projectile-position p))
+               scene))
+
+;; ListOfProjectile Image -> Image
+;; prod. render list of projectilies on spec. scene
+(define (draw-projectiles lop scene)
+  (cond [(empty? lop) scene]
+        [else (draw-projectile (first lop) (draw-projectiles (rest lop) scene))]))
+
+;; Game Image -> Image
+;; prod. render game on spec. scene
+(define (draw-game g scene)
+  (draw-hero (game-hero g)
+             (draw-enemies (game-enemies g)
+                           (draw-pixels (game-shields g)
+                                        (draw-projectiles (game-projectiles g)
+                                                          scene)))))
 
 (define GAME-INIT (make-game 1
-                             (make-hero (make-posn 0 0) 3)
+                             (make-hero (make-posn (/ WIDTH 2) (- HEIGHT (image-height HERO-IMAGE))) 3)
                              ENEMIES-INIT
                              SHIELDS-INIT
                              empty
                              (make-stat 0 "running")))
+
+(draw-game GAME-INIT BACKGROUND)
