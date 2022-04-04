@@ -16,7 +16,7 @@
 (define ENEMY-PROJECTILE-IMAGE (bitmap "images/enemy-projectile.png"))
 (define HERO-PROJECTILE-IMAGE (bitmap "images/hero-projectile.png"))
 (define ENEMIES-COUNT-ROW 11)
-(define HERO-SPEED 4)
+(define HERO-SPEED 16)
 (define PROJECTILE-SPEED 2)
 (define SHIELD-SIZE (* (image-width ENEMY-IMAGE) 2))
 (define WIDTH (* SHIELD-SIZE 9))
@@ -254,25 +254,6 @@
 
 ;; =================
 ;; Functions:
-
-;; Game -> Game
-;; start the world with (main GAME-INIT)
-;;
-(define (main g)
-  (big-bang g         ; Game
-    (on-tick tock)    ; Game -> Game
-    (to-draw render)  ; Game -> Image
-    (on-key ...)))    ; Game KeyEvent -> Game
-
-;; Game -> Game
-;; produce the next state of the game
-;; !!!
-(define (tock g) g)
-
-;; Game -> Image
-;; render current state of game
-;; !!!
-(define (render g) empty-image)
 
 ;; Number Number Number -> ListOfPixel
 ;; Generate line of pixels where x and y with some length
@@ -589,4 +570,44 @@
                              empty
                              (make-stat 0 "running")))
 
-(draw-game GAME-INIT BACKGROUND)
+;; Game -> Game
+;; start the world with (main GAME-INIT)
+;;
+(define (main g)
+  (big-bang g         ; Game
+    (on-tick tock)    ; Game -> Game
+    (to-draw render)  ; Game -> Image
+    (on-key change))) ; Game KeyEvent -> Game
+
+;; Game -> Game
+;; produce the next state of the game
+;; !!!
+(define (tock g) g)
+
+;; Game -> Image
+;; render current state of game
+(define (render g) (draw-game g BACKGROUND))
+
+;; Hero -> Boolean
+;; produce true if x pos of hero is > 0
+(define (can-hero-go-left? h)
+  (> (posn-x (hero-position h)) 0))
+
+;; Game KeyEvent -> Game
+;; produce new state of game after pressing the button
+(define (change g a-key)
+  (cond
+    [(key=? a-key "left") (if (can-hero-go-left? (game-hero g))
+                              (make-game
+                               (game-level g)
+                               (make-hero (make-posn (- (posn-x (hero-position (game-hero g))) HERO-SPEED)
+                                                     (posn-y (hero-position (game-hero g))))
+                                          (hero-lives (game-hero g)))
+                               (game-enemies g)
+                               (game-shields g)
+                               (game-projectiles g)
+                               (game-stat g))
+                              g)]
+    [else g]))
+
+(main GAME-INIT)
